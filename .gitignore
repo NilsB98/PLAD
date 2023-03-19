@@ -1,6 +1,4 @@
 .idea/**
-plotting
-plotting/**
 
 .ipynb_checkpoints
 __pycache__/
