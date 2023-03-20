@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 from torch import Tensor
-
 from torch.utils.data import DataLoader
+
 import plotting.plotting
-from model.plad import PLAD, OptimalClassifier, Classifier
 from data.function_ds import NormalDataset
+from model.plad import PLAD, Classifier
 from utils.devices import get_device
 
 
