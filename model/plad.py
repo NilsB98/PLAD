@@ -11,8 +11,8 @@ class Perturbator(nn.Module):
         super(Perturbator, self).__init__()
         self.device = device
 
-        self.fc1 = nn.Linear(dim, 50, device=device)
-        self.fc2 = nn.Linear(50, 2 * dim, device=device)
+        self.fc1 = nn.Linear(dim, 100, device=device)
+        self.fc2 = nn.Linear(100, 2 * dim, device=device)
 
     def forward(self, x):
         """
