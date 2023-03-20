@@ -13,13 +13,15 @@ device = get_device()
 model = Classifier(2, device)
 optimizer = torch.optim.Adam(model.parameters())
 
+PATH = r'../checkpoints/classifier1.pt'
+
 
 def train():
     batch_size = 2 ** 7
     dataset = LabeledDataset(2 ** 20)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    EPOCHS = 50
+    EPOCHS = 10
 
     for epoch in range(EPOCHS):
         batch_loss = 0
@@ -43,6 +45,8 @@ def train():
             perturbed_data = data[labels.bool()]
             plotting.plotting.plot_decision(f"Only classifier trained - Epoch {epoch + 1}", model, normal_data,
                                             perturbed_data)
+
+        torch.save(model.state_dict(), PATH)
 
 
 if __name__ == '__main__':
