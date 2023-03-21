@@ -24,7 +24,7 @@ class Perturbator(nn.Module):
         :return: alpha, beta contained in a Tensor.
         """
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = F.tanh(self.fc2(x))
 
         return x
 
@@ -74,7 +74,8 @@ class PLAD(nn.Module):
         alpha = pert_params[:, self.dim:]
         beta = pert_params[:, :self.dim]
 
-        x_pert = alpha * x + beta
+        # alpha *
+        x_pert = x + beta
 
         return self.classifier(x), self.classifier(x_pert), alpha, beta
 

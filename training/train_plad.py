@@ -22,7 +22,7 @@ def L(pred_normal, pred_pert, alpha, beta) -> Tensor:
     :return:
     """
 
-    lambd = 0.1
+    lambd = 0.01
     loss_fn = nn.BCELoss()
 
     l = loss_fn(pred_pert, torch.ones_like(pred_pert)) + lambd * (torch.norm(alpha - 1) + torch.norm(beta))
@@ -34,14 +34,15 @@ def L(pred_normal, pred_pert, alpha, beta) -> Tensor:
 
 
 PATH_PRETRAINED_CLS = r'../checkpoints/classifier.pt'
-use_pretrained_classifier = True
+use_pretrained_classifier = False
 
 BATCH_SIZE = 256
 EPOCHS = 50
 
 device = get_device()
 plad = PLAD(2, device)
-optimizer = torch.optim.Adam(plad.parameters())
+pert_optimizer = torch.optim.Adam(plad.perturbator.parameters(), lr=0.000001)
+clf_optimizer = torch.optim.Adam(plad.classifier.parameters())
 
 
 def train():
@@ -52,7 +53,7 @@ def train():
     """
     print(f"training on {device}")
 
-    dataset = NormalDataset(2 ** 15, interval=(0, 10))
+    dataset = NormalDataset(2 ** 20, interval=(0, 10))
     train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     if use_pretrained_classifier:
@@ -74,12 +75,15 @@ def train():
 
         for i, batch in enumerate(train_loader):
             x = batch.to(device)
-            optimizer.zero_grad()
+            pert_optimizer.zero_grad()
+            clf_optimizer.zero_grad()
+
             outputs = plad(x)
             loss = L(*outputs)
             loss.backward()
 
-            optimizer.step()
+            pert_optimizer.step()
+            clf_optimizer.step()
             epoch_loss += loss.item()
 
         with torch.no_grad():
@@ -90,7 +94,7 @@ def train():
             acc_normal = torch.sum(y_pred_normal <= 0.5) / len(y_pred_normal)
             print(f"EPOCH {epoch + 1}: loss={epoch_loss / BATCH_SIZE}, {acc_normal=:.2f}, {acc_pert=:.2f}")
             x_pert = alpha * x_normal + beta
-            plotting.plotting.plot_decision(f"Epoch {epoch + 1}, loss={epoch_loss / BATCH_SIZE:.3f}",
+            plotting.plotting.plot_decision(f"Epoch {epoch + 1}, loss={epoch_loss / BATCH_SIZE:.3f} clf_pre={use_pretrained_classifier}",
                                             plad.classifier,
                                             x_normal.cpu(), x_pert.cpu())
 
