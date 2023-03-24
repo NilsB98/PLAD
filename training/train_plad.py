@@ -9,7 +9,7 @@ from model.plad import PLAD, Classifier
 from utils.devices import get_device
 
 
-def L(pred_normal, pred_pert, alpha, beta) -> Tensor:
+def L(pred_normal, pred_pert) -> Tensor:
     """
     Loss used to optimize PLAD with:
     y_true = 0
@@ -22,10 +22,10 @@ def L(pred_normal, pred_pert, alpha, beta) -> Tensor:
     :return:
     """
 
-    lambd = 0.01
+    lambd = 0.1
     loss_fn = nn.BCELoss()
 
-    l = loss_fn(pred_pert, torch.ones_like(pred_pert)) + lambd * (torch.norm(alpha - 1) + torch.norm(beta))
+    l = loss_fn(pred_pert, torch.ones_like(pred_pert)) + lambd * torch.norm(pred_normal - pred_pert, 2)
 
     if not use_pretrained_classifier:
         l += loss_fn(pred_normal, torch.zeros_like(pred_normal))
@@ -78,8 +78,8 @@ def train():
             pert_optimizer.zero_grad()
             clf_optimizer.zero_grad()
 
-            outputs = plad(x)
-            loss = L(*outputs)
+            y_pred_normal, y_pred_pert, _ = plad(x)
+            loss = L(y_pred_normal, y_pred_pert)
             loss.backward()
 
             pert_optimizer.step()
@@ -89,11 +89,10 @@ def train():
         with torch.no_grad():
             # make a plot and calculate some performance metrics
             x_normal = next(iter(train_loader)).to(device)
-            y_pred_normal, y_pred_pert, alpha, beta = plad(x_normal)
+            y_pred_normal, y_pred_pert, x_pert = plad(x_normal)
             acc_pert = torch.sum(y_pred_pert >= 0.5) / len(y_pred_pert)
             acc_normal = torch.sum(y_pred_normal <= 0.5) / len(y_pred_normal)
             print(f"EPOCH {epoch + 1}: loss={epoch_loss / BATCH_SIZE}, {acc_normal=:.2f}, {acc_pert=:.2f}")
-            x_pert = alpha * x_normal + beta
             plotting.plotting.plot_decision(f"Epoch {epoch + 1}, loss={epoch_loss / BATCH_SIZE:.3f} clf_pre={use_pretrained_classifier}",
                                             plad.classifier,
                                             x_normal.cpu(), x_pert.cpu())

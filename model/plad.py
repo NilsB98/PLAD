@@ -11,8 +11,9 @@ class Perturbator(nn.Module):
         super(Perturbator, self).__init__()
         self.device = device
 
-        self.fc1 = nn.Linear(dim, 100, device=device)
-        self.fc2 = nn.Linear(100, 2 * dim, device=device)
+        self.fc1 = nn.Linear(dim, 10, device=device)
+        self.fc2 = nn.Linear(10, 50, device=device)
+        self.out = nn.Linear(50, 2, device=device)
 
     def forward(self, x):
         """
@@ -25,6 +26,7 @@ class Perturbator(nn.Module):
         """
         x = F.relu(self.fc1(x))
         x = F.tanh(self.fc2(x))
+        x = self.out(x)
 
         return x
 
@@ -70,14 +72,9 @@ class PLAD(nn.Module):
         :return: prediction(x_pert), prediction(x), alpha, beta
         """
 
-        pert_params = self.perturbator(x)
-        alpha = pert_params[:, self.dim:]
-        beta = pert_params[:, :self.dim]
+        x_pert = self.perturbator(x)
 
-        # alpha *
-        x_pert = x + beta
-
-        return self.classifier(x), self.classifier(x_pert), alpha, beta
+        return self.classifier(x), self.classifier(x_pert), x_pert
 
 
 class OptimalClassifier(nn.Module):
