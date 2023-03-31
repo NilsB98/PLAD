@@ -41,7 +41,7 @@ EPOCHS = 50
 
 device = get_device()
 plad = PLAD(2, device)
-pert_optimizer = torch.optim.Adam(plad.perturbator.parameters(), lr=0.000001)
+pert_optimizer = torch.optim.Adam(plad.perturbator.parameters())
 clf_optimizer = torch.optim.Adam(plad.classifier.parameters())
 
 
