@@ -10,7 +10,7 @@ class BaseDataset(Dataset):
     Some epsilon is randomly added to the true data, s.t. for one x we can have multiple y.
     To generate data which *doesn't* belong to the distribution set sample_normal to false.
     """
-    def __init__(self, num: int, f=np.sin, epsilon=.5, epsilon_pert=.5, interval=(0, 10), sample_normal=True):
+    def __init__(self, num: int, f=torch.sin, epsilon=.5, epsilon_pert=.5, interval=(0, 10), sample_normal=True):
         self.num = num
         self.f = f
         self.epsilon = epsilon
@@ -18,24 +18,27 @@ class BaseDataset(Dataset):
         self.interval = interval
         self.sample_normal = sample_normal
 
-        self.xs = self.sample_in_range(num, interval[0], interval[1])
-        self.ys = f(self.xs)
+        xs = self.sample_in_range(num, interval[0], interval[1])
+        ys = f(xs)
+
 
         if sample_normal:
-            data_inherent_deviation = np.random.uniform(-epsilon, epsilon, self.xs.shape)
-            self.ys += data_inherent_deviation
+            data_inherent_deviation = torch.FloatTensor(xs.shape).uniform_(-epsilon, epsilon)
+            ys += data_inherent_deviation
         else:
-            direction = np.random.choice([1, -1], size=self.xs.shape)
-            amount = np.random.uniform(0, 1, size=self.xs.shape)
+            direction = torch.randint(0, 2, size=xs.shape) * 2 - 1
+            amount = torch.FloatTensor(xs.shape).uniform_(0, 1)
             deviation = direction * (epsilon + amount * epsilon_pert)
-            self.ys += deviation
+            ys += deviation
+
+        self.data = torch.concat([xs, ys], dim=1)
 
     @staticmethod
     def sample_in_range(num, a, b):
         return torch.FloatTensor(num, 1).uniform_(a, b)
 
     def __getitem__(self, index):
-        return torch.FloatTensor([self.xs[index], self.ys[index]])
+        return self.data[index]
 
     def __len__(self):
         return self.num
