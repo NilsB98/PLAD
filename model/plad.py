@@ -11,9 +11,9 @@ class Perturbator(nn.Module):
         super(Perturbator, self).__init__()
         self.device = device
 
-        self.fc1 = nn.Linear(dim, 10, device=device)
-        self.fc2 = nn.Linear(10, 50, device=device)
-        self.out = nn.Linear(50, 2, device=device)
+        # self.fc1 = nn.Linear(dim, 100, device=device)
+        self.fc2 = nn.Linear(dim, 100, device=device)
+        self.out = nn.Linear(100, 2, device=device)
 
     def forward(self, x):
         """
@@ -24,7 +24,6 @@ class Perturbator(nn.Module):
         :param x: Input sample to perturb
         :return: alpha, beta contained in a Tensor.
         """
-        x = F.relu(self.fc1(x))
         x = F.tanh(self.fc2(x))
         x = self.out(x)
 

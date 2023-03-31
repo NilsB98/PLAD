@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from torch import Tensor
 
 
-def plot_decision(title, model, data_normal, data_pert=None):
+def plot_decision(title, model, data_normal, data_pert=None, num_points=100):
     # Create a grid of points covering the input space
     xmin, xmax = 0, 10
     ymin, ymax = -2, 2
@@ -20,9 +20,12 @@ def plot_decision(title, model, data_normal, data_pert=None):
     data_np = data_normal.numpy()
     # Create a heatmap-like plot of the predicted class labels
     plt.contourf(xx, yy, ygrid, cmap=plt.cm.RdBu, alpha=0.5)
-    plt.scatter(data_np[:100, 0], data_np[:100, 1], c='r', label='Normal Data')
+    plt.scatter(data_np[:num_points, 0], data_np[:num_points, 1], c='r', label='Normal Data')
     if data_pert is not None:
-        plt.scatter(data_pert[:100, 0], data_pert[:100, 1], c='b', label='Perturbed Data')
+        plt.scatter(data_pert[:num_points, 0], data_pert[:num_points, 1], c='b', label='Perturbed Data')
+        # draw lines between the pairs of normal and perturbed points:
+        for x_normal, x_pert in zip(data_normal[:num_points], data_pert[:num_points]):
+            plt.plot([x_normal[0], x_pert[0]], [x_normal[1], x_pert[1]], c='grey', alpha=.7)
     plt.title(title)
     plt.legend()
     plt.show()
