@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 
 import plotting.plotting
 from data.function_ds import NormalDataset
-from data.sphere import SphereDataset
+from data.sphere import GeometricDataset, SphereDataset, RectangleDataset
 from model.plad import PLAD, Classifier
 from utils.devices import get_device
 
@@ -55,7 +55,8 @@ def train():
     print(f"training on {device}")
 
     # dataset = NormalDataset(2 ** 20, interval=(0, 10))
-    dataset = SphereDataset(2 ** 20, 1)
+    # dataset = SphereDataset(2 ** 20, {'rad': 1}, shift_x=1., shift_y=1.)
+    dataset = RectangleDataset(2 ** 20, {'width': 2, 'height': 2})
     train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     if use_pretrained_classifier:

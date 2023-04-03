@@ -78,8 +78,8 @@ class PLAD(nn.Module):
         alpha = pert_params[:, self.dim:]
         beta = pert_params[:, :self.dim]
 
-        # alpha *
-        x_pert = x + beta
+        #
+        x_pert = alpha * x + beta
 
         return self.classifier(x), self.classifier(x_pert), alpha, beta
 
