@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 
 import plotting.plotting
 from data.function_ds import NormalDataset
+from data.sphere import SphereDataset, RectangleDataset
 from model.plad import PLAD, Classifier
 from utils.devices import get_device
 
@@ -36,11 +37,13 @@ def L(pred_normal, pred_pert, points_normal, points_pert) -> Tensor:
 
 
 PATH_PRETRAINED_CLS = r'../checkpoints/classifier.pt'
+PATH_PLAD = r'../checkpoints/plad.pt'
 use_pretrained_classifier = False
+use_pretrained_plad = False
 
 BATCH_SIZE = 512
 EPOCHS = 150
-lambd = .03
+lambd = 0.01
 
 device = get_device()
 plad = PLAD(2, device)
@@ -57,7 +60,10 @@ def train():
     global lambd
     print(f"training on {device}")
 
-    dataset = NormalDataset(2 ** 21, interval=(0, 10))
+    # dataset = NormalDataset(2 ** 21, interval=(0, 10))
+    # dataset.normalize()
+    # dataset = SphereDataset(2**21, {'rad': 1})
+    dataset = RectangleDataset(2 ** 21, {'width': 1, 'height': 2})
     train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     if use_pretrained_classifier:
@@ -74,11 +80,15 @@ def train():
 
         plotting.plotting.plot_decision("Pretrained Classifier", classifier, next(iter(train_loader)), None)
 
+    if use_pretrained_plad:
+        plad.load_state_dict(torch.load(PATH_PLAD))
+
     for epoch in range(EPOCHS):
         epoch_loss = 0
 
         for i, batch in enumerate(train_loader):
-            x_normal = batch.to(device)
+            x_normal: Tensor = batch.to(device)
+            x_normal.requires_grad = True
             pert_optimizer.zero_grad()
             if not use_pretrained_classifier:
                 clf_optimizer.zero_grad()
@@ -88,7 +98,7 @@ def train():
             loss.backward()
 
             pert_optimizer.step()
-            if not use_pretrained_classifier:
+            if not use_pretrained_classifier:  #  and i % 5 == 0
                 clf_optimizer.step()
             epoch_loss += loss.item()
 
@@ -103,7 +113,8 @@ def train():
                                             plad.classifier,
                                             x_normal.cpu(), x_pert.cpu())
 
-        lambd += .01
+        # torch.save(plad.state_dict(), PATH_PLAD)
+        # lambd += .01
 
 if __name__ == '__main__':
     train()

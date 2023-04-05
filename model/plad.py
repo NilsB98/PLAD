@@ -13,6 +13,7 @@ class Perturbator(nn.Module):
 
         # self.fc1 = nn.Linear(dim, 100, device=device)
         self.fc2 = nn.Linear(dim, 100, device=device)
+        self.fc2_1 = nn.Linear(100, 100, device=device)
         self.out = nn.Linear(100, 2, device=device)
 
     def forward(self, x):
@@ -25,6 +26,7 @@ class Perturbator(nn.Module):
         :return: alpha, beta contained in a Tensor.
         """
         x = F.tanh(self.fc2(x))
+        x = F.tanh(self.fc2_1(x))
         x = self.out(x)
 
         return x
@@ -37,6 +39,7 @@ class Classifier(nn.Module):
         self.device = device
 
         self.fc1 = nn.Linear(dim, 100, device=device)
+        self.fc1_1 = nn.Linear(100, 100, device=device)
         self.fc2 = nn.Linear(100, 1, device=device)
 
     def forward(self, x):
@@ -49,6 +52,7 @@ class Classifier(nn.Module):
         :return: probability to be abnormal.
         """
         x = F.relu(self.fc1(x))
+        x = F.relu(self.fc1_1(x))
         x = torch.sigmoid(self.fc2(x))
         return x
 

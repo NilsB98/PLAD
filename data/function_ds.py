@@ -43,6 +43,10 @@ class BaseDataset(Dataset):
     def __len__(self):
         return self.num
 
+    def normalize(self):
+        self.data -= torch.mean(self.data, dim=0)
+        self.data /= torch.max(torch.abs(self.data), dim=0).values
+
 
 class NormalDataset(BaseDataset):
     def __init__(self, num: int, f=np.sin, epsilon=.5, epsilon_pert=.5, interval=(0, 10)):

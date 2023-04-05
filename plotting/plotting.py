@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 from torch import Tensor
 
 
-def plot_decision(title, model, data_normal, data_pert=None, num_points=100):
+def plot_decision(title, model, data_normal: Tensor, data_pert: Tensor = None, num_points=100):
     # Create a grid of points covering the input space
-    xmin, xmax = 0, 10
-    ymin, ymax = -2, 2
-    xx, yy = np.meshgrid(np.linspace(xmin, xmax, 100),
-                         np.linspace(ymin, ymax, 100))
+    mins = Tensor.min(data_normal, dim=0).values
+    maxs = Tensor.max(data_normal, dim=0).values
+
+    xx, yy = np.meshgrid(np.linspace(mins[0] - 1, maxs[0] + 1, 100),
+                         np.linspace(mins[1] - 1, maxs[1] + 1, 100))
     Xgrid = np.column_stack([xx.ravel(), yy.ravel()])
 
     # Use the classifier to predict the class labels for the grid points
@@ -19,7 +20,8 @@ def plot_decision(title, model, data_normal, data_pert=None, num_points=100):
 
     data_np = data_normal.numpy()
     # Create a heatmap-like plot of the predicted class labels
-    plt.contourf(xx, yy, ygrid, cmap=plt.cm.RdBu, alpha=0.5)
+    levels = [0, 0.4, 0.5, 0.6, 1]
+    plt.contourf(xx, yy, ygrid, cmap=plt.cm.RdBu, alpha=0.5, vmin=0, vmax=1, levels=levels)
     plt.scatter(data_np[:num_points, 0], data_np[:num_points, 1], c='r', label='Normal Data')
     if data_pert is not None:
         plt.scatter(data_pert[:num_points, 0], data_pert[:num_points, 1], c='b', label='Perturbed Data')
