@@ -23,7 +23,7 @@ def L(pred_normal, pred_pert, alpha, beta) -> Tensor:
     :return:
     """
 
-    lambd = 0.01
+    global lambd
     loss_fn = nn.BCELoss()
 
     l = loss_fn(pred_pert, torch.ones_like(pred_pert)) + lambd * (torch.norm(alpha - 1) + torch.norm(beta))
@@ -44,7 +44,7 @@ device = get_device()
 plad = PLAD(2, device)
 pert_optimizer = torch.optim.Adam(plad.perturbator.parameters())
 clf_optimizer = torch.optim.Adam(plad.classifier.parameters())
-
+lambd = 0.01
 
 def train():
     """
@@ -53,10 +53,10 @@ def train():
     :return: none
     """
     print(f"training on {device}")
-
+    global lambd
     # dataset = NormalDataset(2 ** 20, interval=(0, 10))
-    # dataset = SphereDataset(2 ** 20, {'rad': 1}, shift_x=1., shift_y=1.)
-    dataset = RectangleDataset(2 ** 20, {'width': 2, 'height': 2})
+    dataset = SphereDataset(2 ** 20, {'rad': 1}, shift_x=1., shift_y=1.)
+    # dataset = RectangleDataset(2 ** 20, {'width': 2, 'height': 2})
     train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     if use_pretrained_classifier:
@@ -85,7 +85,9 @@ def train():
             loss = L(*outputs)
             loss.backward()
 
-            pert_optimizer.step()
+            if i % 200 == 0:
+                pert_optimizer.step()
+                lambd += 0.001
             clf_optimizer.step()
             epoch_loss += loss.item()
 
@@ -97,7 +99,7 @@ def train():
             acc_normal = torch.sum(y_pred_normal <= 0.5) / len(y_pred_normal)
             print(f"EPOCH {epoch + 1}: loss={epoch_loss / BATCH_SIZE}, {acc_normal=:.2f}, {acc_pert=:.2f}")
             x_pert = alpha * x_normal + beta
-            plotting.plotting.plot_decision(f"Epoch {epoch + 1}, loss={epoch_loss / BATCH_SIZE:.3f} clf_pre={use_pretrained_classifier}",
+            plotting.plotting.plot_decision(f"Epoch {epoch + 1}, loss={epoch_loss / BATCH_SIZE:.3f} {lambd=:.3f}",
                                             plad.classifier,
                                             x_normal.cpu(), x_pert.cpu())
 
