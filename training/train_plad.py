@@ -55,8 +55,8 @@ def train():
     print(f"training on {device}")
     global lambd
     # dataset = NormalDataset(2 ** 20, interval=(0, 10))
-    dataset = SphereDataset(2 ** 20, {'rad': 1}, shift_x=1., shift_y=1.)
-    # dataset = RectangleDataset(2 ** 20, {'width': 2, 'height': 2})
+    # dataset = SphereDataset(2 ** 20, {'rad': 1}, shift_x=1., shift_y=1.)
+    dataset = RectangleDataset(2 ** 20, {'width': 2, 'height': 2})
     train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     if use_pretrained_classifier:
@@ -85,8 +85,8 @@ def train():
             loss = L(*outputs)
             loss.backward()
 
+            pert_optimizer.step()
             if i % 200 == 0:
-                pert_optimizer.step()
                 lambd += 0.001
             clf_optimizer.step()
             epoch_loss += loss.item()
