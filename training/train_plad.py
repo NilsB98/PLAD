@@ -1,16 +1,16 @@
 import torch
 import torch.nn as nn
 from torch import Tensor
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 
 import plotting.plotting
 from data.function_ds import NormalDataset
-from data.sphere import SphereDataset, RectangleDataset
+from data.geometry import SphereDataset, RectangleDataset
 from model.plad import PLAD, Classifier
 from utils.devices import get_device
 
 
-def L(pred_normal, pred_pert, points_normal, points_pert) -> Tensor:
+def L(pred_normal, pred_pert, points_normal, points_pert, ep=1) -> Tensor:
     """
     Loss used to optimize PLAD with:
     y_true = 0
@@ -28,7 +28,7 @@ def L(pred_normal, pred_pert, points_normal, points_pert) -> Tensor:
     loss_fn = nn.BCELoss()
 
     # return lambd * torch.norm(points_normal - points_pert, 2)
-    l = loss_fn(pred_pert, torch.ones_like(pred_pert)) + lambd * torch.norm(points_normal - points_pert, 2)
+    l = min([1, 0.1 * (ep + 1)]) * loss_fn(pred_pert, torch.ones_like(pred_pert)) + lambd * torch.norm(points_normal - points_pert, 2)
 
     if not use_pretrained_classifier:
         l += loss_fn(pred_normal, torch.zeros_like(pred_normal))
@@ -43,10 +43,12 @@ use_pretrained_plad = False
 
 BATCH_SIZE = 512
 EPOCHS = 150
+DIMS = 2
 lambd = 0.01
 
 device = get_device()
-plad = PLAD(2, device)
+plad = PLAD(DIMS, device)
+plad.perturbator.set_scaling(10.)
 pert_optimizer = torch.optim.Adam(plad.perturbator.parameters())
 clf_optimizer = torch.optim.Adam(plad.classifier.parameters())
 
@@ -62,13 +64,14 @@ def train():
 
     # dataset = NormalDataset(2 ** 21, interval=(0, 10))
     # dataset.normalize()
-    # dataset = SphereDataset(2**21, {'rad': 1})
-    dataset = RectangleDataset(2 ** 21, {'width': 1, 'height': 2})
+    # dataset = SphereDataset(2 ** 21, DIMS, {'rad': 1})
+    dataset = ConcatDataset([SphereDataset(2 ** 10, DIMS, {'rad': 1}), SphereDataset(2 ** 10, DIMS, {'rad': 1}, shift_x=2.)])
+    # dataset = RectangleDataset(2 ** 21, 2,  {'width': 1, 'height': 2})
     train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     if use_pretrained_classifier:
         # load pretrained classifier
-        classifier = Classifier(2, device)
+        classifier = Classifier(DIMS, device)
         classifier.load_state_dict(torch.load(PATH_PRETRAINED_CLS))
 
         # freeze weights of pretrained classifier
@@ -84,6 +87,7 @@ def train():
         plad.load_state_dict(torch.load(PATH_PLAD))
 
     for epoch in range(EPOCHS):
+        input("Press Enter to continue...")
         epoch_loss = 0
 
         for i, batch in enumerate(train_loader):
@@ -94,11 +98,11 @@ def train():
                 clf_optimizer.zero_grad()
 
             y_pred_normal, y_pred_pert, x_pert = plad(x_normal)
-            loss = L(y_pred_normal, y_pred_pert, x_normal, x_pert)
+            loss = L(y_pred_normal, y_pred_pert, x_normal, x_pert, epoch)
             loss.backward()
 
             pert_optimizer.step()
-            if not use_pretrained_classifier:  #  and i % 5 == 0
+            if not use_pretrained_classifier:  # and i % 5 == 0
                 clf_optimizer.step()
             epoch_loss += loss.item()
 
@@ -109,12 +113,14 @@ def train():
             acc_pert = torch.sum(y_pred_pert >= 0.5) / len(y_pred_pert)
             acc_normal = torch.sum(y_pred_normal <= 0.5) / len(y_pred_normal)
             print(f"EPOCH {epoch + 1}: loss={epoch_loss / BATCH_SIZE}, {acc_normal=:.2f}, {acc_pert=:.2f}")
-            plotting.plotting.plot_decision(f"Epoch {epoch + 1}, loss={epoch_loss / BATCH_SIZE:.3f} lamd={lambd:.2f}",
-                                            plad.classifier,
-                                            x_normal.cpu(), x_pert.cpu())
+            plotting.plotting.plot_decision(
+                f"Epoch {epoch + 1}, loss={epoch_loss / BATCH_SIZE:.3f} lamd={lambd:.2f}",
+                plad.classifier,
+                x_normal.cpu(), x_pert.cpu())
 
         # torch.save(plad.state_dict(), PATH_PLAD)
         # lambd += .01
+
 
 if __name__ == '__main__':
     train()

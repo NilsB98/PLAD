@@ -21,13 +21,30 @@ def plot_decision(title, model, data_normal: Tensor, data_pert: Tensor = None, n
     data_np = data_normal.numpy()
     # Create a heatmap-like plot of the predicted class labels
     levels = [0, 0.4, 0.5, 0.6, 1]
-    plt.contourf(xx, yy, ygrid, cmap=plt.cm.RdBu, alpha=0.5, vmin=0, vmax=1, levels=levels)
-    plt.scatter(data_np[:num_points, 0], data_np[:num_points, 1], c='r', label='Normal Data')
+    plt.contourf(xx, yy, ygrid, cmap=plt.cm.bwr, alpha=0.5, vmin=0, vmax=1, levels=levels)
+    plt.scatter(data_np[:num_points, 0], data_np[:num_points, 1], c='b', label='Normal Data')
     if data_pert is not None:
-        plt.scatter(data_pert[:num_points, 0], data_pert[:num_points, 1], c='b', label='Perturbed Data')
+        plt.scatter(data_pert[:num_points, 0], data_pert[:num_points, 1], c='r', label='Perturbed Data')
         # draw lines between the pairs of normal and perturbed points:
         for x_normal, x_pert in zip(data_normal[:num_points], data_pert[:num_points]):
             plt.plot([x_normal[0], x_pert[0]], [x_normal[1], x_pert[1]], c='grey', alpha=.7)
     plt.title(title)
     plt.legend()
+    plt.show()
+
+
+def plot_decision_n_dim(title, model, data_normal: Tensor, data_pert: Tensor = None, num_points=100):
+    dims = data_normal.shape[1]
+    fig, axs = plt.subplots(dims, 1)
+
+    for i in range(dims):
+        feature_i = data_normal[:num_points, i]
+        pert_feature_i = data_pert[:num_points, i]
+
+        axs[i].scatter(feature_i, np.zeros_like(feature_i))
+        axs[i].scatter(pert_feature_i, np.zeros_like(pert_feature_i), alpha=0.5)
+
+        axs[i].title.set_text(title)
+        # axs[i].legend()
+    fig.tight_layout()
     plt.show()
