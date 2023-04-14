@@ -54,9 +54,9 @@ def train():
     """
     print(f"training on {device}")
     global lambd
-    # dataset = NormalDataset(2 ** 20, interval=(0, 10))
+    dataset = NormalDataset(2 ** 20, interval=(0, 10))
     # dataset = SphereDataset(2 ** 20, {'rad': 1}, shift_x=1., shift_y=1.)
-    dataset = RectangleDataset(2 ** 20, {'width': 2, 'height': 2})
+    # dataset = RectangleDataset(2 ** 20, {'width': 2, 'height': 2})
     train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     if use_pretrained_classifier:

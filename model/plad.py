@@ -64,6 +64,7 @@ class PLAD(nn.Module):
 
         self.perturbator = Perturbator(dim, device)
         self.classifier = Classifier(dim, device)
+        self.flatten = nn.Flatten()
 
     def forward(self, x):
         """
@@ -74,6 +75,7 @@ class PLAD(nn.Module):
         :return: prediction(x_pert), prediction(x), alpha, beta
         """
 
+        x = self.flatten(x)
         pert_params = self.perturbator(x)
         alpha = pert_params[:, self.dim:]
         beta = pert_params[:, :self.dim]
@@ -81,19 +83,4 @@ class PLAD(nn.Module):
         #
         x_pert = alpha * x + beta
 
-        return self.classifier(x), self.classifier(x_pert), alpha, beta
-
-
-class OptimalClassifier(nn.Module):
-    """
-    Classifier to optimally classify data points for the sinusoid toy problem.
-    """
-    def __init__(self, device):
-        super().__init__()
-        self.device = device
-
-    def forward(self, X):
-        epsilon = .5
-        is_in_normal_area = (torch.sin(X[:, 0]) - epsilon < X[:, 1]) & (X[:, 1] < torch.sin(X[:, 0]) + epsilon)
-
-        return torch.logical_not(is_in_normal_area).int().float()
+        return self.classifier(x), self.classifier(x_pert), alpha, beta, x_pert
